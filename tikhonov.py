@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import nnls, minimize
-from scipy.sparse.linalg import LinearOperator, lsqr
+from scipy.sparse import csr_matrix
+from scipy.sparse.linalg import LinearOperator, lsqr, lsmr
 
 def tikhonovSolve(eta, I, f, MP, deltaAlphaP, deltaBetaP):
     """
@@ -17,24 +18,25 @@ def tikhonovSolve(eta, I, f, MP, deltaAlphaP, deltaBetaP):
 
     n, m = I.shape
 
+    I_sparse = csr_matrix(I)
+    f_sparse = csr_matrix(f)
+
     # define matrix operations
     def A_matvec(x):
         """Compute A @ x without storing A."""
         # Reshape x into R (m × m)
         R = x.reshape((m, m))
         # Compute I @ R @ f.T
-        temp = I @ R @ f.T
         # Scale by Δα' Δβ' and vectorize
-        return (deltaAlphaP * deltaBetaP * temp).flatten()
+        return (deltaAlphaP * deltaBetaP * (I_sparse @ R @ f_sparse.T)).flatten()
 
     def A_rmatvec(y):
         """Compute A.T @ y without storing A."""
         # Reshape y into M' (n × n)
         M_prime = y.reshape((n, n))
         # Compute I.T @ M' @ f
-        temp = I.T @ M_prime @ f
-        # Scale by Δα' Δβ' and vectorize
-        return (deltaAlphaP * deltaBetaP * temp).flatten()
+                # Scale by Δα' Δβ' and vectorize
+        return (deltaAlphaP * deltaBetaP * (I_sparse.T @ M_prime @ f_sparse)).flatten()
 
     # Define A as a LinearOperator
     A = LinearOperator(
@@ -45,7 +47,7 @@ def tikhonovSolve(eta, I, f, MP, deltaAlphaP, deltaBetaP):
 
     b = MP.flatten()
 
-    x = lsqr(A, b, damp=np.sqrt(eta), iter_lim=1000)[0]
+    x = lsmr(A, b, damp=eta, atol=1e-6, btol=1e-6, maxiter=3000)[0]
     R = x.reshape((m, m))
     R = np.maximum(R, 0)
     R /= (np.sum(R) * deltaAlphaP * deltaBetaP)
@@ -65,7 +67,7 @@ def optimize_parameters(I, f, MP, deltaAlphaP, deltaBetaP, R_true, initial_guess
     Optimize eta and epsilon to minimize the error
     """
     # Define bounds for parameters (eta and epsilon should typically be positive)
-    bounds = [(1e-6, None)]
+    bounds = [(1e-12, None)]
     
     # Run optimization
     result = minimize(
