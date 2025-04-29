@@ -1,8 +1,7 @@
-import enum
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
-from tikhonov import tikhonovSolve, optimize_parameters
+from tikhonov import calculate_error, tikhonovSolve, optimize_parameters
 
 n_samples = 200
 
@@ -40,7 +39,7 @@ MP_simulated = deltaBetaP * deltaAlphaP * I @ R_true @ f
 #MP_simulated += 0.001 * np.random.randn(*MP_simulated.shape)
 MP_simulated /= MP_simulated.max()
 
-betaPIndex = np.round(np.linspace(0, n_samples-1, 2)).astype("int")
+betaPIndex = np.round(np.linspace(0, n_samples-1, 5)).astype("int")
 R = np.zeros((R_true.shape[0], betaPIndex.shape[0]))
 
 initial_eta, initial_epsilon = 0.004, 0.001

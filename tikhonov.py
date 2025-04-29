@@ -6,8 +6,8 @@ def tikhonovSolve(I, f, MP, eta, epsilon, deltaAlphaP, deltaBetaP, beta):
     B = np.vstack([deltaBetaP * f, eta * np.eye(f.shape[0])])
     b = np.concatenate([MP[:, beta], np.zeros(MP[:, beta].shape[0])])
 
-    B_stacked = np.vstack([B, epsilon * np.ones(B.shape[1])])
-    b_stacked = np.concatenate([b, epsilon / deltaBetaP * np.ones(1)])
+    B_stacked = np.vstack([epsilon * B, np.ones(B.shape[1])])
+    b_stacked = np.concatenate([epsilon * b, 1 / deltaBetaP * np.ones(1)])
 
     M, _ = nnls(B_stacked, b_stacked)
     M /= M.max()
@@ -16,8 +16,8 @@ def tikhonovSolve(I, f, MP, eta, epsilon, deltaAlphaP, deltaBetaP, beta):
     A = np.vstack([deltaAlphaP * I, eta * np.eye(I.shape[0])])
     a = np.concatenate([M, np.zeros(M.shape[0])])
 
-    A_stacked = np.vstack([A, epsilon * np.ones(A.shape[1])])
-    a_stacked = np.concatenate([a, epsilon / deltaAlphaP * np.ones(1)])
+    A_stacked = np.vstack([epsilon * A, np.ones(A.shape[1])])
+    a_stacked = np.concatenate([epsilon * a, 1 / deltaAlphaP * np.ones(1)])
 
     R, _ = nnls(A_stacked, a_stacked)
     R /= R.max()
