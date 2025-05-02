@@ -2,72 +2,41 @@ import numpy as np
 from scipy.optimize import nnls, minimize
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import LinearOperator, lsqr, lsmr
+from initDistribs import *
 
-def tikhonovSolve(eta, I, f, MP, deltaAlphaP, deltaBetaP):
-    """
-    Solve for R(α', β') and M(α, β') using NNLS with Tikhonov regularization and constraints.
-    
-    Parameters:
-        I: Source function I(α, α') [n_α × n_α']
-        f: Detector function f(β, β') [n_β × n_β']
-        MP: Measured data M'(α, β) [n_α × n_β]
-        eta: Tikhonov regularization parameter
-        deltaAlphaP, deltaBetaP: Discretization steps (Δα', Δβ')
-        beta: Fixed β angle index to solve for
-    """
-
+def tikhonovSolve(eta, epsilon, I, f, MP, deltaAlphaP, deltaBetaP):
     n, m = I.shape
 
     I_sparse = csr_matrix(I)
     f_sparse = csr_matrix(f)
 
-    # define matrix operations
-    def A_matvec(x):
-        """Compute A @ x without storing A."""
-        # Reshape x into R (m × m)
-        R = x.reshape((m, m))
-        # Compute I @ R @ f.T
-        # Scale by Δα' Δβ' and vectorize
-        return (deltaAlphaP * deltaBetaP * (I_sparse @ R @ f_sparse.T)).flatten()
-
-    def A_rmatvec(y):
-        """Compute A.T @ y without storing A."""
-        # Reshape y into M' (n × n)
-        M_prime = y.reshape((n, n))
-        # Compute I.T @ M' @ f
-                # Scale by Δα' Δβ' and vectorize
-        return (deltaAlphaP * deltaBetaP * (I_sparse.T @ M_prime @ f_sparse)).flatten()
-
-    # Define A as a LinearOperator
-    A = LinearOperator(
-        shape=(n * n, m * m),  # A is n² × m²
-        matvec=A_matvec,       # Computes A @ x
-        rmatvec=A_rmatvec      # Computes A.T @ y
-    )
-
     b = MP.flatten()
+    A = np.kron(f, I)
 
-    x = lsmr(A, b, damp=eta, atol=1e-6, btol=1e-6, maxiter=3000)[0]
+    A_stacked = np.vstack([epsilon * A, epsilon * eta * np.eye(m**2), np.ones((1, m**2))])
+    b_stacked = np.concatenate([b, np.zeros(m**2), [1/ (deltaAlphaP * deltaBetaP)]])
+
+    x, _ = nnls(A_stacked, b_stacked)
     R = x.reshape((m, m))
-    R = np.maximum(R, 0)
-    R /= (np.sum(R) * deltaAlphaP * deltaBetaP)
+    R /= R.max()
     
     return R
 
-def calculate_error(eta, I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_truth):
+def calculate_error(params, I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_truth):
     """
     Helper function to calculate the error for given eta and epsilon
     """
-    R = tikhonovSolve(eta, I, f, MP_simulated, deltaAlphaP, deltaBetaP)
+    eta, epsilon = params
+    R = tikhonovSolve(eta, epsilon, I, f, MP_simulated, deltaAlphaP, deltaBetaP)
     rmse = np.sqrt(np.mean((R - R_truth)**2))
     return rmse
 
-def optimize_parameters(I, f, MP, deltaAlphaP, deltaBetaP, R_true, initial_guess=0.01):
+def optimize_parameters(I, f, MP, deltaAlphaP, deltaBetaP, R_true, initial_guess=[0.01, 0.001]):
     """
     Optimize eta and epsilon to minimize the error
     """
     # Define bounds for parameters (eta and epsilon should typically be positive)
-    bounds = [(1e-12, None)]
+    bounds = [(1e-9, None), (1e-9, None)]
     
     # Run optimization
     result = minimize(

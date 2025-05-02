@@ -2,47 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
 from tikhonov import calculate_error, tikhonovSolve, optimize_parameters
+from initDistribs import *
 
-n_angles = 200
-n_primeAngles = 400
-
-# Angles
-alpha = np.linspace(0, np.pi/2, n_angles)
-alphaP = np.linspace(-np.pi/4, np.pi/4, n_primeAngles)
-
-beta = np.linspace(0, np.pi/2, n_angles)
-betaP = np.linspace(-np.pi/4, np.pi/4, n_primeAngles)
-
-deltaAlphaP = alphaP[1]-alphaP[0]
-deltaBetaP = betaP[1]-betaP[0]
-
-# Source
-sigmaI = np.deg2rad(5)
-alpha_grid, alphaP_grid = np.meshgrid(alpha, alphaP, indexing="ij")
-I = norm.pdf(alpha_grid - alphaP_grid, sigmaI)
-I /= I.max()
-
-# Captor
-sigmaf = np.deg2rad(10)
-beta_grid, betaP_grid = np.meshgrid(beta, betaP, indexing="ij")
-f = norm.pdf(beta_grid - betaP_grid, sigmaf)
-f /= f.max()
-
-# Simulated R
-alphaP_grid, betaP_grid = np.meshgrid(alphaP, betaP, indexing="ij")
-R_true = norm.pdf(alphaP_grid - betaP_grid, 0, np.deg2rad(10))
-R_true /= (np.sum(R_true) * deltaAlphaP * deltaBetaP)
-
-# Simulate MP using R_true
-MP_simulated = deltaBetaP * deltaAlphaP * I @ R_true @ f.T
-MP_simulated /= MP_simulated.max()
-
-print(f"MP: {MP_simulated.shape}")
-print(f"R_true: {R_true.shape}")
-
-#betaIndex = np.array([((n_samples-1)/5)]).astype("int")
-#betaIndex = np.round(np.linspace(0, n_angles-1, 2)).astype("int")
-#alphaIndex = np.round(np.linspace(0, n_angles-1, 2)).astype("int")
 
 alphaIndex = np.round(n_angles/2).astype("int")
 betaIndex = np.round(n_angles/2).astype("int")
