@@ -7,28 +7,31 @@ from initDistribs import *
 def tikhonovSolve(eta, epsilon, I, f, MP, deltaAlphaP, deltaBetaP):
     n, m = I.shape
 
-    I_sparse = csr_matrix(I)
-    f_sparse = csr_matrix(f)
+    c_weight = 1
 
     b = MP.flatten()
-    A = np.kron(f, I)
+    A = deltaAlphaP * deltaBetaP * np.kron(f, I)
 
-    A_stacked = np.vstack([epsilon * A, epsilon * eta * np.eye(m**2), np.ones((1, m**2))])
-    b_stacked = np.concatenate([b, np.zeros(m**2), [1/ (deltaAlphaP * deltaBetaP)]])
+    C = np.zeros((m, m * m))
+    for i in range(m):
+        C[i, i * m:(i + 1) * m] = 1
+    c = np.full((m,), 1.0 / (deltaAlphaP * deltaBetaP))
+
+    A_stacked = np.vstack([epsilon * A, epsilon * eta * np.eye(m**2), c_weight * C])
+    b_stacked = np.concatenate([b, np.zeros(m**2), c_weight * c])
 
     x, _ = nnls(A_stacked, b_stacked)
     R = x.reshape((m, m))
-    R /= R.max()
-    
+
     return R
 
-def calculate_error(params, I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_truth):
+def calculate_error(params, I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_true):
     """
     Helper function to calculate the error for given eta and epsilon
     """
     eta, epsilon = params
     R = tikhonovSolve(eta, epsilon, I, f, MP_simulated, deltaAlphaP, deltaBetaP)
-    rmse = np.sqrt(np.mean((R - R_truth)**2))
+    rmse = np.sqrt(np.mean((R - R_true)**2))
     return rmse
 
 def optimize_parameters(I, f, MP, deltaAlphaP, deltaBetaP, R_true, initial_guess=[0.01, 0.001]):

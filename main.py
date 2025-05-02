@@ -13,15 +13,14 @@ betaVal = beta[betaIndex]
 #R = np.zeros((R_true.shape[0], betaIndex.shape[0]))
 #M = np.zeros((M_true.shape[0], betaIndex.shape[0]))
 
-initial_eta = 0.0001
-optimized_eta = optimize_parameters(I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_true, initial_eta)
+#optimized_eta = optimize_parameters(I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_true, initial_eta)
 
 #Optimal eta: 0.025792322391461498, Optimal epsilon: 1e-09
 #optimized_eta = 0.025792322391461498
 #optimized_epsilon = 1e-09
 
-R = tikhonovSolve(optimized_eta, I, f, MP_simulated, deltaAlphaP, deltaBetaP)
-print(f"R: {R.shape}")
+R = tikhonovSolve(initial_eta, initial_epsilon, I, f, MP_simulated, deltaAlphaP, deltaBetaP)
+print(f"R: {R}")
 
 # Plot I and f
 plt.figure(figsize=(12, 5))
@@ -63,8 +62,8 @@ plt.show()
 
 # Plot R
 plt.figure(figsize=(12, 5))
-plt.plot(np.rad2deg(alphaP), R[:, 0], linestyle='-', label=f'Reflectivity R, Beta {np.rad2deg(betaVal):.1f} (deg)')
-plt.plot(np.rad2deg(alphaP), R_true[:, 0], linestyle='-.', label=f'Generated R_true, Beta {np.rad2deg(betaVal):.1f} (deg)')
+plt.plot(np.rad2deg(alphaP), R[:, 10], linestyle='-', label=f'Reflectivity R, Beta {np.rad2deg(betaVal):.1f} (deg)')
+plt.plot(np.rad2deg(alphaP), R_true[:, 10], linestyle='-.', label=f'Generated R_true, Beta {np.rad2deg(betaVal):.1f} (deg)')
 plt.xlabel('AlphaP (deg)')
 plt.ylabel('Normalized Reflectivity')
 plt.title('Reflectivity R')
