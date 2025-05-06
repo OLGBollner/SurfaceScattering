@@ -72,7 +72,7 @@ def estimateCaptor(deltaAlphaP, I):
 
     f = generateCaptor(beta, deltaAlphaP, sigmaf_opt, C_opt)
 
-    return f
+    return f, C_opt, sigmaf_opt
 
 
 
@@ -89,14 +89,14 @@ plt.rcParams['ytick.labelsize'] = 'xx-large'
 
 plt.plot(intensity[:, 0], intensity[:, 1], linewidth=2, linestyle='-', color='r', label='Intensity 0.1 deg step')
 # Add labels and title
-plt.xlabel('Beta (deg)')
+plt.xlabel('β (deg)')
 plt.ylabel('Intensity')
 plt.title('Measured Average Intensity \n over wavelengths 150 - 1200 nm')
 plt.legend(loc=(0.01, 0.7))
 plt.grid(True)
 plt.xlim(175, 185)
 plt.ylim(2000, 7000)
-plt.savefig("measured-intensity-01step-.png", dpi=300, bbox_inches="tight")
+plt.savefig("measured-intensity-01step.png", dpi=300, bbox_inches="tight")
 plt.show()
 
 
@@ -105,22 +105,55 @@ alpha = np.array([0])
 beta = np.deg2rad(intensity[:, 0])
 
 I, alpha_prime = generateSource(alpha, deltaAlphaP)
-f = estimateCaptor(deltaAlphaP, I)
+f, C_opt, sigmaf_opt = estimateCaptor(deltaAlphaP, I)
 
-plt.figure(figsize=(8, 6))
-plt.imshow(f, extent=[alpha_prime.min(), alpha_prime.max(), beta.min(), beta.max()],
-           origin='lower', aspect='auto', cmap='viridis', vmin=0, vmax=np.max(f))
-plt.colorbar(label='f(β, α\')')
-plt.xlabel('α\' (deg)')
-plt.ylabel('β (deg)')
-plt.title('Gaussian Kernel f(β, α\')')
+print(f"C: {C_opt}, Sigma_f: {sigmaf_opt}")
+
+# Create a meshgrid for 3D plotting
+Beta, Alpha = np.rad2deg(np.meshgrid(beta, alpha_prime, indexing='ij'))
+
+# Plot
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
+ax.set_proj_type('ortho')
+
+# Surface plot
+surf = ax.plot_surface(Beta, Alpha, f, cmap='viridis', edgecolor='none')
+
+# Labels and title
+ax.set_xlabel('β (deg)', fontsize=12)
+ax.set_ylabel('α\' (deg)', fontsize=12)
+ax.set_zlabel('f(β, α\')', fontsize=12)
+ax.set_title('3D Gaussian Kernel $f(β, α\')$', fontsize=14)
+
+# Colorbar
+fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10, label='Amplitude')
+
+# Adjust view angle
+ax.view_init(elev=30, azim=45)  # Elevation and azimuthal angles
+
+plt.tight_layout()
+plt.savefig("reconstructed-f.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-plt.plot(alpha_prime, I, linewidth=2, linestyle='-', color='r', label='Intensity I')
+# plt.figure(figsize=(8, 6))
+# plt.imshow(f, extent=np.rad2deg([alpha_prime.min(), alpha_prime.max(), beta.min(), beta.max()]),
+#            origin='lower', aspect='auto', cmap='viridis', vmin=0, vmax=np.max(f))
+# plt.colorbar(label='f(β, α\')')
+# plt.xlabel('α\' (deg)')
+# plt.ylabel('β (deg)')
+# plt.title('Gaussian Kernel f(β, α\')')
+# plt.savefig("reconstructed-f.png", dpi=300, bbox_inches="tight")
+# plt.show()
+
+alpha_prime_deg = np.rad2deg(alpha_prime)
+plt.plot(alpha_prime_deg, I, linewidth=2, linestyle='-', color='r', label='Intensity I')
 # Add labels and title
-plt.xlabel('alpha (deg)')
+plt.xlabel('α\' (deg)')
 plt.ylabel('Intensity')
 plt.title('Reconstructed Source intensity')
 plt.legend(loc=(0.01, 0.7))
+plt.xlim(alpha_prime_deg.min(), alpha_prime_deg.max())
 plt.grid(True)
+plt.savefig("reconstructed-I.png", dpi=300, bbox_inches="tight")
 plt.show()
