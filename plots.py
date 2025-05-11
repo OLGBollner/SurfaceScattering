@@ -1,57 +1,48 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-from tikhonov import *
+from functionUtils import *
 
-n_samples = 200
+n_a = 70
+n_b = 50
+m = 100
 
 # Source
-alpha = np.linspace(0, np.pi/2, n_samples)
-alphaP = np.linspace(-np.pi/4, np.pi/4, n_samples)
-sigmaI = np.deg2rad(5)
+alpha = np.linspace(-np.pi/2, np.pi/2, n_a)
+alphaP = np.linspace(-np.pi/2, np.pi/2, m)
+sigmaI = np.deg2rad(1)
 
-alpha_grid, alphaP_grid = np.meshgrid(alpha, alphaP)
-I = norm.pdf(alpha_grid - alphaP_grid, sigmaI)
-I /= I.max()
+I = gaussian(alpha[:, None], alphaP, 15, sigmaI)
 
 # Captor
-beta = np.linspace(0, np.pi/2, n_samples)
-betaP = np.linspace(-np.pi/4, np.pi/4, n_samples)
-sigmaf = np.deg2rad(10)
+beta = np.linspace(-np.pi/2, np.pi/2, n_b)
+betaP = np.linspace(-np.pi/2, np.pi/2, m)
+sigmaf = np.deg2rad(2)
 
-beta_grid, betaP_grid = np.meshgrid(beta, betaP)
-f = norm.pdf(beta_grid - betaP_grid, sigmaf)
-f /= f.max()
-
-# Measured Intensity emitted from alpha and reflected at beta prime
-M = np.zeros((alpha.shape[0], betaP.shape[0]))
+f = gaussian(beta[:, None] - 0.013, betaP, 1, sigmaf)
 
 deltaAlphaP = alphaP[1]-alphaP[0]
 deltaBetaP = betaP[1]-betaP[0]
 
-# Ground truth R
-alphaP_grid, betaP_grid = np.meshgrid(alphaP, betaP)
-R_true = norm.pdf(alphaP_grid - betaP_grid, 0, np.deg2rad(10))
-R_true /= R_true.max()
+sigmaR = np.deg2rad(10)
+R_true = gaussian(alphaP[:, None], betaP, 1, sigmaR)
 
-# Simulate MP using R_truth
-MP_simulated = deltaBetaP * deltaAlphaP * I @ R_true @ f
-#MP_simulated += 0.001 * np.random.randn(*MP_simulated.shape)
-MP_simulated /= MP_simulated.max()
+MP_simulated = deltaBetaP * deltaAlphaP * (I @ R_true @ f.T)
 
-betaPIndex = np.round(np.linspace(0, n_samples-1, 4)).astype("int")
-R = np.zeros((R_true.shape[0], betaPIndex.shape[0]))
+MP_min = MP_simulated.min()
+MP_simulated -= MP_min
+MP_max = MP_simulated.max()
+MP_simulated /= MP_max
 
 initial_eta, initial_epsilon = 0.004, 0.001
-betaPVal = 0
 # Plot Error with varying Eta
 plt.figure(figsize=(12, 5))
-etaVals = np.linspace(1e-09, 1, 50)
-errors = [calculate_error([eta, initial_epsilon], I, f, MP_simulated, deltaAlphaP, deltaBetaP, betaPVal, R_true) for eta in etaVals]
-plt.plot(etaVals, errors, linestyle='-', label=f'Error, BetaP {np.rad2deg(betaP[betaPVal]):.1f} (deg)')
+etaVals = np.linspace(1e-09, 2, 200)
+errors = [calculate_error([eta, initial_epsilon], I, f, MP_simulated, deltaAlphaP) for eta in etaVals]
+plt.plot(etaVals, errors, linestyle='-', label=f'Error (deg)')
 plt.xlabel('Eta')
 plt.ylabel('RMSE')
-plt.title('Root Mean Square Error R vs R_true')
+plt.title('Root Mean Square Error MP_simulated vs MP_pred')
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 plt.grid()
 plt.tight_layout()
@@ -60,12 +51,12 @@ plt.show()
 
 # Plot Error with varying Epsilon
 plt.figure(figsize=(12, 5))
-epsilonVals = np.linspace(1e-09, 10, 50)
-errors = [calculate_error([initial_eta, epsilon], I, f, MP_simulated, deltaAlphaP, deltaBetaP, betaPVal, R_true) for epsilon in epsilonVals]
-plt.plot(etaVals, errors, linestyle='-', label=f'Error, BetaP {np.rad2deg(betaP[betaPVal]):.1f} (deg)')
+epsilonVals = np.linspace(1e-09, 10, 100)
+errors = [calculate_error([initial_eta, epsilon], I, f, MP_simulated, deltaAlphaP) for epsilon in epsilonVals]
+plt.plot(epsilonVals, errors, linestyle='-', label=f'Error (deg)')
 plt.xlabel('Epsilon')
 plt.ylabel('RMSE')
-plt.title('Root Mean Square Error R vs R_true')
+plt.title('Root Mean Square Error MP_simulated vs MP_pred')
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 plt.grid()
 plt.tight_layout()
