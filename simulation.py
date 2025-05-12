@@ -52,7 +52,7 @@ plt.rcParams['axes.labelsize'] = 'xx-large'
 plt.rcParams['xtick.labelsize'] = 'xx-large'
 plt.rcParams['ytick.labelsize'] = 'xx-large'
 
-plt.figure(figsize=(12, 5))
+plt.figure(figsize=(8, 6))
 
 plt.subplot(1, 2, 1)
 plt.imshow(I, extent=np.rad2deg([alpha[0], alpha[-1], alphaP[-1], alphaP[0]]), aspect='auto', cmap='viridis')
@@ -69,7 +69,7 @@ plt.ylabel('$\\beta\' (^\\circ)$')
 plt.title('f')
 plt.show()
 
-plt.figure(figsize=(12, 5))
+plt.figure(figsize=(8, 6))
 
 #plt.subplot(2, 2, 1)
 plt.imshow(M, extent=np.rad2deg([alpha[0], alpha[-1], betaP[-1], betaP[0]]), aspect='auto', cmap='viridis')
@@ -79,7 +79,7 @@ plt.ylabel('$\\beta\' (^\\circ)$')
 plt.title('Reflected Intensity M')
 plt.show()
 
-plt.figure(figsize=(12, 5))
+plt.figure(figsize=(8, 6))
 #plt.subplot(2, 2, 2)
 plt.imshow(R, extent=np.rad2deg([alphaP[0], alphaP[-1], betaP[-1], betaP[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Intensity')
@@ -89,7 +89,7 @@ plt.title(f'Intensity of Light Emitted by Surface R$(\\alpha\', \\beta\')$ \n $\
 plt.savefig("reconstructed-R.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-plt.figure(figsize=(12, 5))
+plt.figure(figsize=(8, 6))
 #plt.subplot(2, 2, 3)
 plt.imshow(MP_simulated * MP_max + MP_min, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Intensity')
@@ -99,7 +99,7 @@ plt.title('Simulated Measured Intensity M\'$(\\alpha, \\beta)$')
 plt.savefig("simulated-mp.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-plt.figure(figsize=(12, 5))
+plt.figure(figsize=(8, 6))
 #plt.subplot(2, 2, 4)
 plt.imshow(MP_pred, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Intensity')

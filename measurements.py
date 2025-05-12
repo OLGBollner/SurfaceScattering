@@ -5,6 +5,8 @@ from functionUtils import gaussian, optimize_parameters, readData
 
 params = ()
 
+# REACREATE THE UPPER HALF OF DATA!
+
 with open("calibration.txt", "r") as file:
     params = file.read().split(" ")
 
