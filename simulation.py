@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from scipy import sparse
 from functionUtils import *
 
-n_a = 300
-n_b = 300
-m = 400
+n_a = 100
+n_b = 100
+m = 200
 
 # Source
 alpha = np.linspace(-np.pi/2, np.pi/2, n_a)
@@ -36,14 +36,16 @@ MP_simulated /= MP_max
 
 # MP_simulated += np.random.uniform(-0.1, 0.1, MP_simulated.shape)
 
-R, M, opt_params = optimize_parameters(I, f, MP_simulated, deltaAlphaP, initial_guess=[0.1, 0.0001], track_history=True)
+initial_guess = [ 1e-06, 0.1, 0.0001, 0.31]
 
-# eta, epsilon = 0.2, 1e-9
-# M = MatrixSolve(f, MP_simulated.T, deltaAlphaP).T
-# 
-# R = tikhonovSolve(I, M, eta, epsilon, deltaBetaP)
+R, M, opt_params = optimize_parameters(I, f, MP_simulated, deltaAlphaP, initial_guess=[0.1, 0.1, 0.0001, 0.0001], track_history=True)
+
+# M = tikhonovSolve(f, MP_simulated.T, initial_guess[0], initial_guess[2], deltaAlphaP).T
+# R = tikhonovSolve(I, M, initial_guess[1], initial_guess[3], deltaBetaP)
+# opt_params = initial_guess
 
 MP_pred = deltaBetaP * deltaAlphaP * (I @ R @ f.T)
+MP_pred /= MP_pred.max()
 
 plt.rcParams['axes.titlesize'] = 'xx-large'
 plt.rcParams['axes.titleweight'] = 'bold'
@@ -53,7 +55,7 @@ plt.rcParams['axes.labelsize'] = 'xx-large'
 plt.rcParams['xtick.labelsize'] = 'xx-large'
 plt.rcParams['ytick.labelsize'] = 'xx-large'
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(6, 4))
 
 plt.subplot(1, 2, 1)
 plt.imshow(I, extent=np.rad2deg([alpha[0], alpha[-1], alphaP[-1], alphaP[0]]), aspect='auto', cmap='viridis')
@@ -70,7 +72,7 @@ plt.ylabel('$\\beta\' (^\\circ)$')
 plt.title('f')
 plt.show()
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(6, 4))
 
 #plt.subplot(2, 2, 1)
 plt.imshow(M, extent=np.rad2deg([alpha[0], alpha[-1], betaP[-1], betaP[0]]), aspect='auto', cmap='viridis')
@@ -78,19 +80,17 @@ plt.colorbar(label='Normalized Intensity')
 plt.xlabel('$\\alpha (^\\circ)$')
 plt.ylabel('$\\beta\' (^\\circ)$')
 plt.title('Reflected Intensity M')
-plt.show()
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(6, 4))
 #plt.subplot(2, 2, 2)
 plt.imshow(R, extent=np.rad2deg([alphaP[0], alphaP[-1], betaP[-1], betaP[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Intensity')
 plt.xlabel('$\\alpha\' (^\\circ)$')
 plt.ylabel('$\\beta\' (^\\circ)$')
-plt.title(f'Intensity of Light Emitted by Surface R$(\\alpha\', \\beta\')$ \n $\\eta: {opt_params[0]:.3e}$  $\\epsilon: {opt_params[1]:.3e}$')
+plt.title(f'Intensity of Light Emitted by Surface R$(\\alpha\', \\beta\')$ \n $\\eta: {opt_params[1]:.3e}$  $\\epsilon: {opt_params[3]:.3e}$')
 plt.savefig("reconstructed-R.png", dpi=300, bbox_inches="tight")
-plt.show()
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(6, 4))
 #plt.subplot(2, 2, 3)
 plt.imshow(MP_simulated, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Intensity')
@@ -98,9 +98,8 @@ plt.xlabel('$\\alpha (^\\circ)$')
 plt.ylabel('$\\beta (^\\circ)$')
 plt.title('Simulated Measured Intensity M\'$(\\alpha, \\beta)$')
 plt.savefig("simulated-mp.png", dpi=300, bbox_inches="tight")
-plt.show()
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(6, 4))
 #plt.subplot(2, 2, 4)
 plt.imshow(MP_pred, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Intensity')

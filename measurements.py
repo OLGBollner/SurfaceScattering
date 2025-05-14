@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from functionUtils import gaussian, optimize_parameters, readData
+from functionUtils import gaussian, optimize_parameters, readData, tikhonovSolve
 
 params = ()
 
@@ -12,7 +12,9 @@ with open("calibration.txt", "r") as file:
 
 sigma_I, C_f, sigma_f, beta_offset = np.float32(params)
 
-alpha, beta, rawIntensity, MP  = readData("ID606TAC", smooth=True)
+datafile = "Beetle6"
+
+alpha, beta, rawIntensity, MP  = readData(datafile, smooth=True)
 
 delta = 1 / np.sqrt(alpha.shape[0]*beta.shape[0])
 print(delta)
@@ -31,9 +33,28 @@ MP -= MP_min
 MP_max = MP.max()
 MP /= MP_max
 
-R, M, opt_params = optimize_parameters(I, f, MP, delta, [0.01, 1e-6], track_history=True)
+initial_guess = [ 1e-06, 0.1, 0.0001, 0.31]
+
+
+#R, M, opt_params = optimize_parameters(I, f, MP, delta, initial_guess, track_history=True)
+
+M = tikhonovSolve(f, MP.T, initial_guess[0], initial_guess[2], delta).T
+R = tikhonovSolve(I, M, initial_guess[1], initial_guess[3], delta)
+opt_params = initial_guess
 
 MP_simulated = (delta**2) * (I @ R @ f.T)
+MP_simulated /= MP_simulated.max()
+
+
+plt.rcParams['axes.titlesize'] = 'xx-large'
+plt.rcParams['axes.titleweight'] = 'bold'
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['legend.fontsize'] = 'xx-large'
+plt.rcParams['axes.labelsize'] = 'xx-large'
+plt.rcParams['xtick.labelsize'] = 'xx-large'
+plt.rcParams['ytick.labelsize'] = 'xx-large'
+
+
 plt.figure(figsize=(12, 5))
 
 plt.subplot(1, 2, 1)
@@ -51,35 +72,41 @@ plt.ylabel('$\\beta\' (^\\circ)$')
 plt.title('f')
 plt.show()
 
-plt.figure(figsize=(12, 5))
+plt.figure(figsize=(6, 4))
 
-plt.subplot(2, 2, 1)
+#plt.subplot(2, 2, 1)
 plt.imshow(M, extent=np.rad2deg([alpha[0], alpha[-1], betaP[-1], betaP[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Normalized Intensity')
 plt.xlabel('$\\alpha (^\\circ)$')
 plt.ylabel('$\\beta\' (^\\circ)$')
 plt.title('Reflected Intensity M')
 
-plt.subplot(2, 2, 2)
+plt.figure(figsize=(6, 4))
+#plt.subplot(2, 2, 2)
 plt.imshow(R, extent=np.rad2deg([alphaP[0], alphaP[-1], betaP[-1], betaP[0]]), aspect='auto', cmap='viridis')
-plt.colorbar(label='Normalized Intensity')
+plt.colorbar(label='Intensity')
 plt.xlabel('$\\alpha\' (^\\circ)$')
 plt.ylabel('$\\beta\' (^\\circ)$')
-plt.title('R')
+plt.title(f'Intensity of Light Emitted by Surface R$(\\alpha\', \\beta\')$ \n $\\eta: {opt_params[1]:.3e}$  $\\epsilon: {opt_params[3]:.3e}$')
+plt.savefig(f"{datafile}-reconstructed-R.png", dpi=300, bbox_inches="tight")
 
-plt.subplot(2, 2, 3)
+plt.figure(figsize=(6, 4))
+#plt.subplot(2, 2, 3)
 plt.imshow(MP, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
-plt.colorbar(label='Normalized Intensity')
+plt.colorbar(label='Intensity')
 plt.xlabel('$\\alpha (^\\circ)$')
 plt.ylabel('$\\beta (^\\circ)$')
-plt.title('Smoothed data M\'')
+plt.title('Measured Intensity M\'$(\\alpha, \\beta)$')
+plt.savefig(f"{datafile}-mp.png", dpi=300, bbox_inches="tight")
 
-plt.subplot(2, 2, 4)
+plt.figure(figsize=(6, 4))
+#plt.subplot(2, 2, 4)
 plt.imshow(MP_simulated, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
-plt.colorbar(label='Normalized Intensity')
+plt.colorbar(label='Intensity')
 plt.xlabel('$\\alpha (^\\circ)$')
 plt.ylabel('$\\beta (^\\circ)$')
-plt.title('Reconstructed Data M\'')
+plt.title('Reconstructed Measured \n Intensity M\'$(\\alpha, \\beta)$')
+plt.savefig(f"{datafile}-reconstructed-mp.png", dpi=300, bbox_inches="tight")
 
 plt.show()
 

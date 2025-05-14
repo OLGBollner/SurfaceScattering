@@ -60,11 +60,11 @@ def calculate_error(params, I, f, MP, delta, track_history=False):
     """
     Helper function to calculate the error for given eta and epsilon
     """
-    eta, epsilon = params
+    eta1, eta2, epsilon1, epsilon2 = params
 
-    M = MatrixSolve(f, MP.T, delta).T
+    M = tikhonovSolve(f, MP.T, eta1, epsilon1, delta).T
 
-    R = tikhonovSolve(I, M, eta, epsilon, delta)
+    R = tikhonovSolve(I, M, eta2, epsilon2, delta)
 
     MP_pred = delta * (I @ R @ f.T)
     MP_pred /= MP_pred.max()
@@ -76,12 +76,12 @@ def calculate_error(params, I, f, MP, delta, track_history=False):
         print(f"Error: {error:.3e}, Iteration: {iteration_count[1]}", end="\r")
     return error
 
-def optimize_parameters(I, f, MP, delta, initial_guess=[0.01, 0.01], track_history=False):
+def optimize_parameters(I, f, MP, delta, initial_guess=[0.01, 0.01, 0.01, 0.01], track_history=False):
     """
     Optimize eta and epsilon to minimize the error
     """
     # Define bounds for parameters (eta and epsilon should typically be positive)
-    bounds = [(1e-6, 10), (1e-9, 1)]
+    bounds = [(1e-6, 10), (1e-9, 1), (1e-6, 10), (1e-9, 1)]
     
     # Run optimization
     result = minimize(
@@ -93,15 +93,16 @@ def optimize_parameters(I, f, MP, delta, initial_guess=[0.01, 0.01], track_histo
     )
     
     if result.success:
-        eta_opt, epsilon_opt = result.x
+        eta1_opt, eta2_opt, epsilon1_opt, epsilon2_opt = result.x
         min_error = result.fun
         print(f"Optimization successful. Minimum error: {min_error}")
-        print(f"Optimal eta: {eta_opt}, Optimal epsilon: {epsilon_opt}")
+        print(f"Optimal eta_1: {eta1_opt}, Optimal epsilon_1: {epsilon1_opt}")
+        print(f"Optimal eta_2: {eta2_opt}, Optimal epsilon_2: {epsilon2_opt}")
 
-        M = MatrixSolve(f, MP.T, delta).T
-        R = tikhonovSolve(I, M, eta_opt, epsilon_opt, delta)
+        M = tikhonovSolve(f, MP.T, eta1_opt, epsilon2_opt, delta).T
+        R = tikhonovSolve(I, M, eta2_opt, epsilon2_opt, delta)
 
-        return R, M, (eta_opt, epsilon_opt)
+        return R, M, (eta1_opt, eta2_opt, epsilon1_opt, epsilon2_opt)
     else:
         raise RuntimeError(f"Optimization failed: {result.message}")
 
@@ -153,6 +154,6 @@ def readData(directorypath, smooth=False):
 
         smoothed = np.nan_to_num(smoothed, nan=points[:, 2].min())
 
-        smoothed = gaussian_filter(smoothed, sigma=5)
+        #smoothed = gaussian_filter(smoothed, sigma=5)
 
     return np.deg2rad(alpha_values), np.deg2rad(beta_values), intensity_matrix, smoothed
