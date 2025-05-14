@@ -1,56 +1,77 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import norm
-from tikhonov import *
-from initDistribs import *
+from functionUtils import *
 
-"""
-# Plot Error with varying Eta
-plt.figure(figsize=(12, 5))
+n_a = 100
+n_b = 100
+m = 200
+
+# Source
+alpha = np.linspace(-np.pi/2, np.pi/2, n_a)
+alphaP = np.linspace(-np.pi/2, np.pi/2, m)
+sigmaI = np.deg2rad(5)
+
+I = gaussian(alpha[:, None], alphaP, 1, sigmaI)
+
+# Captor
+beta = np.linspace(-np.pi/2, np.pi/2, n_b)
+betaP = np.linspace(-np.pi/2, np.pi/2, m)
+sigmaf = np.deg2rad(5)
+
+f = gaussian(beta[:, None], betaP, 1, sigmaf)
+
+deltaAlphaP = alphaP[1]-alphaP[0]
+deltaBetaP = betaP[1]-betaP[0]
+
+sigmaR = np.deg2rad(10)
+R_true = gaussian(alphaP[:, None], betaP, 1, sigmaR)
+
+MP_simulated = deltaBetaP * deltaAlphaP * (I @ R_true @ f.T)
+
+MP_min = MP_simulated.min()
+MP_simulated -= MP_min
+MP_max = MP_simulated.max()
+MP_simulated /= MP_max
+
+initial_eta, initial_epsilon = 0.4, 1e-4
+
+
+plt.rcParams['axes.titlesize'] = 'xx-large'
+plt.rcParams['axes.titleweight'] = 'bold'
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['legend.fontsize'] = 'xx-large'
+plt.rcParams['axes.labelsize'] = 'xx-large'
+plt.rcParams['xtick.labelsize'] = 'xx-large'
+plt.rcParams['ytick.labelsize'] = 'xx-large'
+
 etaVals = np.linspace(1e-09, 2, 100)
-errors = [calculate_error([eta, initial_epsilon], I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_true) for eta in etaVals]
-plt.plot(etaVals, errors, linestyle='-', label=f'Error')
-plt.xlabel('Eta')
-plt.ylabel('RMSE')
-plt.title('Root Mean Square Error R vs R_true')
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+errors = [calculate_error([eta, initial_epsilon], I, f, MP_simulated, deltaAlphaP, track_history=True) for eta in etaVals]
+
+# Plot Error with varying Eta
+plt.figure(figsize=(8, 6))
+plt.plot(etaVals, errors, linestyle='-', label=f'Error $(^\\circ)$')
+plt.xlabel('$\\eta$')
+plt.ylabel('Relative error')
+plt.title(f'Relative Error of M$\'_{{simulated}}$ vs M$\'_{{predicted}}$ \n $\\epsilon: {initial_epsilon:.3e}$, minimum error: {np.min(errors):.3f}')
+plt.legend()
 plt.grid()
+plt.ylim(0, 1)
 plt.tight_layout()
+plt.savefig("eta-error.png", dpi=300, bbox_inches="tight")
 plt.show()
 
+
+epsilonVals = np.linspace(1e-09, 10, 100)
+errors = [calculate_error([initial_eta, epsilon], I, f, MP_simulated, deltaAlphaP, track_history=True) for epsilon in epsilonVals]
 
 # Plot Error with varying Epsilon
-plt.figure(figsize=(12, 5))
-epsilonVals = np.linspace(1e-06, 10, 100)
-errors = [calculate_error([initial_eta, epsilon], I, f, MP_simulated, deltaAlphaP, deltaBetaP, R_true) for epsilon in epsilonVals]
-plt.plot(epsilonVals, errors, linestyle='-', label=f'Error')
-plt.xlabel('Epsilon')
-plt.ylabel('RMSE')
-plt.title('Root Mean Square Error R vs R_true')
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+plt.figure(figsize=(8, 6))
+plt.plot(epsilonVals, errors, linestyle='-', label=f'Error $(^\\circ)$')
+plt.xlabel('$\\epsilon$')
+plt.ylabel('Relative error')
+plt.title(f'Relative Error of M$\'_{{simulated}}$ vs M$\'_{{predicted}}$ \n $\\eta: {initial_eta:.3e}$, minimum error: {np.min(errors):.3f}')
+plt.legend()
 plt.grid()
 plt.tight_layout()
-plt.show()
-"""
-
-R_sol = tikhonovSolve(initial_eta, initial_epsilon, I, f, MP_simulated, deltaAlphaP, deltaBetaP)
-
-print("Row sums:", R_sol.sum(axis=1))
-print(f"Row sums of R (should be {1/ (deltaAlphaP * deltaBetaP):.2f}):")
-
-fig, axs = plt.subplots(1, 3, figsize=(15, 4))
-
-im0 = axs[0].imshow(R_true, aspect='auto', origin='lower')
-axs[0].set_title("True R")
-plt.colorbar(im0, ax=axs[0])
-
-im1 = axs[1].imshow(R_sol, aspect='auto', origin='lower')
-axs[1].set_title("Recovered R")
-plt.colorbar(im1, ax=axs[1])
-
-im2 = axs[2].imshow(np.abs(R_sol - R_true), aspect='auto', origin='lower')
-axs[2].set_title("Abs Error in R")
-plt.colorbar(im2, ax=axs[2])
-
-plt.tight_layout()
+plt.savefig("epsilon-error.png", dpi=300, bbox_inches="tight")
 plt.show()

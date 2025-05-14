@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
 from tikhonov import calculate_error, tikhonovSolve, optimize_parameters
-from initDistribs import *
 
 
 alphaIndex = np.round(n_angles/2).astype("int")
@@ -19,8 +18,34 @@ betaVal = beta[betaIndex]
 #optimized_eta = 0.025792322391461498
 #optimized_epsilon = 1e-09
 
-R = tikhonovSolve(initial_eta, initial_epsilon, I, f, MP_simulated, deltaAlphaP, deltaBetaP)
-print(f"R: {R}")
+# Measured Intensity emitted from alpha and reflected at beta prime
+M = np.zeros((alpha.shape[0], betaP.shape[0]))
+
+deltaAlphaP = alphaP[1]-alphaP[0]
+deltaBetaP = betaP[1]-betaP[0]
+
+# Ground truth R
+alphaP_grid, betaP_grid = np.meshgrid(alphaP, betaP)
+R_true = norm.pdf(alphaP_grid - betaP_grid, 0, np.deg2rad(10))
+R_true /= R_true.max()
+
+# Simulate MP using R_truth
+MP_simulated = deltaBetaP * deltaAlphaP * I @ R_true @ f
+#MP_simulated += 0.001 * np.random.randn(*MP_simulated.shape)
+MP_simulated /= MP_simulated.max()
+
+betaPIndex = np.round(np.linspace(0, n_samples-1, 5)).astype("int")
+R = np.zeros((R_true.shape[0], betaPIndex.shape[0]))
+
+initial_eta, initial_epsilon = 0.004, 0.001
+for index, betaPVal in enumerate(betaPIndex):
+    optimized_eta, optimized_epsilon = optimize_parameters(I, f, MP_simulated, deltaAlphaP, deltaBetaP, betaPVal, R_true, [initial_eta, initial_epsilon])
+
+    #Optimal eta: 0.025792322391461498, Optimal epsilon: 1e-09
+    #optimized_eta = 0.025792322391461498
+    #optimized_epsilon = 1e-09
+
+    R[:, index], M = tikhonovSolve(I, f, MP_simulated, optimized_eta, optimized_epsilon, deltaAlphaP, deltaBetaP, betaPVal)
 
 # Plot I and f
 plt.figure(figsize=(12, 5))
