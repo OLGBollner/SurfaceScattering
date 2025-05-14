@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import sparse
 from functionUtils import *
 
 n_a = 300
@@ -42,7 +43,7 @@ R, M, opt_params = optimize_parameters(I, f, MP_simulated, deltaAlphaP, initial_
 # 
 # R = tikhonovSolve(I, M, eta, epsilon, deltaBetaP)
 
-MP_pred = deltaBetaP * deltaAlphaP * (I @ R @ f.T) * MP_max + MP_min
+MP_pred = deltaBetaP * deltaAlphaP * (I @ R @ f.T)
 
 plt.rcParams['axes.titlesize'] = 'xx-large'
 plt.rcParams['axes.titleweight'] = 'bold'
@@ -91,7 +92,7 @@ plt.show()
 
 plt.figure(figsize=(8, 6))
 #plt.subplot(2, 2, 3)
-plt.imshow(MP_simulated * MP_max + MP_min, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
+plt.imshow(MP_simulated, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Intensity')
 plt.xlabel('$\\alpha (^\\circ)$')
 plt.ylabel('$\\beta (^\\circ)$')

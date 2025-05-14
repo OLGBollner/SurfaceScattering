@@ -72,7 +72,7 @@ MP /= MP_max
 
 MP = MP.flatten()
 
-I, alpha_prime, sigmaI = generateSource(alpha, deltaAlphaP, 15)
+I, alpha_prime, sigmaI = generateSource(alpha, deltaAlphaP, 1)
 f, opt_params = estimateCaptor(deltaAlphaP, I, MP, beta)
 
 with open("calibration.txt", "w") as file:

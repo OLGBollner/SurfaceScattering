@@ -11,7 +11,7 @@ def gaussian(x0, x, C, sigma):
 
 # Global variables to store history
 R_history = []
-iteration_count = [0]
+iteration_count = [0, 0]
 plot_initialized = False
 if not plot_initialized:
     plt.figure(figsize=(10, 5))
@@ -64,11 +64,16 @@ def calculate_error(params, I, f, MP, delta, track_history=False):
 
     M = MatrixSolve(f, MP.T, delta).T
 
-    R = tikhonovSolve(I, M, eta, epsilon, delta, track_history)
+    R = tikhonovSolve(I, M, eta, epsilon, delta)
 
     MP_pred = delta * (I @ R @ f.T)
+    MP_pred /= MP_pred.max()
 
     error = np.mean(np.linalg.norm(MP - MP_pred)/np.linalg.norm(MP_pred))
+
+    if track_history:
+        iteration_count[1] += 1
+        print(f"Error: {error:.3e}, Iteration: {iteration_count[1]}", end="\r")
     return error
 
 def optimize_parameters(I, f, MP, delta, initial_guess=[0.01, 0.01], track_history=False):
@@ -147,7 +152,7 @@ def readData(directorypath, smooth=False):
         smoothed = gaussian_filter(smoothed, sigma=1)
 
         smoothed = np.nan_to_num(smoothed, nan=points[:, 2].min())
-        
+
         smoothed = gaussian_filter(smoothed, sigma=5)
 
     return np.deg2rad(alpha_values), np.deg2rad(beta_values), intensity_matrix, smoothed

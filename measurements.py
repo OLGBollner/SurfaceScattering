@@ -12,7 +12,7 @@ with open("calibration.txt", "r") as file:
 
 sigma_I, C_f, sigma_f, beta_offset = np.float32(params)
 
-alpha, beta, rawIntensity, MP  = readData("Beetle6", smooth=True)
+alpha, beta, rawIntensity, MP  = readData("ID606TAC", smooth=True)
 
 delta = 1 / np.sqrt(alpha.shape[0]*beta.shape[0])
 print(delta)
@@ -33,8 +33,7 @@ MP /= MP_max
 
 R, M, opt_params = optimize_parameters(I, f, MP, delta, [0.01, 1e-6], track_history=True)
 
-MP_simulated = (delta**2) * (I @ R @ f.T) * MP_max + MP_min
-
+MP_simulated = (delta**2) * (I @ R @ f.T)
 plt.figure(figsize=(12, 5))
 
 plt.subplot(1, 2, 1)
@@ -69,7 +68,7 @@ plt.ylabel('$\\beta\' (^\\circ)$')
 plt.title('R')
 
 plt.subplot(2, 2, 3)
-plt.imshow(MP * MP_max + MP_min, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
+plt.imshow(MP, extent=np.rad2deg([alpha[0], alpha[-1], beta[-1], beta[0]]), aspect='auto', cmap='viridis')
 plt.colorbar(label='Normalized Intensity')
 plt.xlabel('$\\alpha (^\\circ)$')
 plt.ylabel('$\\beta (^\\circ)$')
